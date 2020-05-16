@@ -1,0 +1,35 @@
+plugins {
+    id 'org.springframework.boot' version '2.3.0.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+    id 'java'
+}
+
+group = 'com.zc'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    // 使用lombok来简化掉编码过程中的通用的方法.
+    implementation 'org.projectlombok:lombok'
+    // jdbc相关配置
+    implementation 'mysql:mysql-connector-java'
+    // druid数据库连接池和spring-boot整合包
+    implementation 'com.alibaba:druid-spring-boot-starter:1.1.9'
+    // mybatis和spring-boot整合包
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:2.1.2'
+    // 通用mapper和spring-boot整合包
+    implementation 'tk.mybatis:mapper-spring-boot-starter:2.1.5'
+    // 测试依赖
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
