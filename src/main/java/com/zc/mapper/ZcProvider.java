@@ -14,78 +14,37 @@ import java.util.Set;
  */
 public class ZcProvider extends MapperTemplate {
 
-    private static final String RECORD = "record";
-
     public ZcProvider(Class<?> mapperClass, MapperHelper mapperHelper) {
         super(mapperClass, mapperHelper);
     }
 
     /**
-     * 批量更新方法：根据每一条的主键进行更新，当主键重复时会自动更新，若主键不存在，则进行保存
+     * 批量更新方法：根据每一条的主键进行更新，当主键重复时会自动更新，若主键不存在，则进行保存，未给定数据的字段都会被置为空
      * sql 如下：insert into `test` (id, v) VALUES (null,1),(2,2) on duplicate key update id=VALUES(id), v=VALUES(v);
-     *
-     * TODO 思考：获取在Weekend中设置的列，以此来设置要更新的列
      */
     public String updateListByPrimarykey(MappedStatement ms) {
         Class<?> entityClass = this.getEntityClass(ms);
         StringBuilder sql = new StringBuilder();
         sql.append(SqlHelper.insertIntoTable(entityClass, this.tableName(entityClass)));
 
-        // TODO insert into 后面紧跟着的字段
-        sql.append(updateColumns(entityClass, true, false));
+        // insert into 后面紧跟着的字段
+        sql.append(getAllColumns(entityClass, true, false));
 
         sql.append(" VALUES ");
-        sql.append("<foreach collection=\"list\" item=\"" + RECORD + "\" separator=\",\" >");
-        // TODO 获取要更新数据的字段
-        sql.append(updateColumns(entityClass, false, true));
+        sql.append("<foreach collection=\"list\" item=\"record\" separator=\",\" >");
+
+        // 获取要获取数据在实体类中对应的字段
+        sql.append(getAllColumns(entityClass, false, true));
+
         sql.append("</foreach>");
 
         sql.append(" on duplicate key update ");
-        // TODO on duplicate key update 后面紧跟着的字段
-        sql.append(updateColumns(entityClass, false, false));
+
+        // on duplicate key update 后面紧跟着的字段
+        sql.append(getAllColumns(entityClass, false, false));
 
 //        System.err.println(sql.toString());
 
-        return sql.toString();
-    }
-
-    /**
-     * 构建字段
-     * @param entityClass       实体类
-     * @param isInsertColumns   是否是insert into 后面紧跟着的字段
-     * @param isEntityField     是否是实体类字段
-     * @return
-     */
-    public String updateColumns(Class<?> entityClass, boolean isInsertColumns, boolean isEntityField) {
-        StringBuilder sql = new StringBuilder();
-        sql.append("<choose>");
-        sql.append("<when test=\"mappingFields != null and mappingFields.size() > 0\">");
-        if (isInsertColumns || isEntityField) {
-            sql.append("<trim prefix=\"(\" suffix=\")\" suffixOverrides=\",\">");
-        }
-        sql.append("<foreach collection=\"mappingFields\" item=\"mappingField\" separator=\",\">");
-
-        if (isInsertColumns) {
-            sql.append("${mappingField.column}");
-        } else if (isEntityField) {
-            sql.append("#{" + RECORD + ".${mappingField.field}}");
-        } else {
-            // 是on duplicate key update 后面紧跟着的字段
-            sql.append("${mappingField.column} = VALUES(${mappingField.column})");
-        }
-
-        sql.append("</foreach>");
-
-        if (isInsertColumns || isEntityField) {
-            sql.append("</trim>");
-        }
-
-        sql.append("</when>");
-        //不支持指定列的时候查询全部列
-        sql.append("<otherwise>");
-        sql.append(getAllColumns(entityClass, isInsertColumns, isEntityField));
-        sql.append("</otherwise>");
-        sql.append("</choose>");
         return sql.toString();
     }
 
@@ -94,32 +53,26 @@ public class ZcProvider extends MapperTemplate {
      *
      * @param entityClass
      * @param isInsertColumns   是否是insert into 后面紧跟着的字段
-     * @param isEntityField     是否是实体类字段
+     * @param isValueColumns    要获取数据在实体类中对应的字段
      * @return
      */
-    public String getAllColumns(Class<?> entityClass, boolean isInsertColumns, boolean isEntityField) {
+    public String getAllColumns(Class<?> entityClass, boolean isInsertColumns, boolean isValueColumns) {
         Set<EntityColumn> columnSet = EntityHelper.getColumns(entityClass);
         StringBuilder sql = new StringBuilder();
-        for (EntityColumn entityColumn : columnSet) {
-            sql.append(entityColumn.getColumn()).append(",");
-        }
-        if (isInsertColumns || isEntityField) {
+        if (isInsertColumns || isValueColumns) {
             sql.append("<trim prefix=\"(\" suffix=\")\" suffixOverrides=\",\">");
         } else {
             sql.append("<trim suffixOverrides=\",\">");
         }
-
-        columnSet.forEach(column -> {
+        columnSet.forEach(entityColumn -> {
             if (isInsertColumns) {
-                sql.append(column.getColumn() + ",");
-            } else if (isEntityField) {
-                sql.append(column.getColumnHolder(RECORD) + ",");
+                sql.append(entityColumn.getColumn()).append(",");
+            } else if (isValueColumns) {
+                sql.append(entityColumn.getColumnHolder("record") + ",");
             } else {
-                // on duplicate key update 后面紧跟着的字段
-                sql.append(column.getColumn() + "=VALUES(" + column.getColumn() + "),");
+                sql.append(entityColumn.getColumn() + "=VALUES(" + entityColumn.getColumn() + "),");
             }
         });
-
         sql.append("</trim>");
         return sql.toString();
     }

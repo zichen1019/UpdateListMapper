@@ -8,7 +8,7 @@
 
 ### 更新方式
 
-> 根据每一条的主键进行更新，当主键重复时会自动更新，若主键不存在，则进行保存
+> 根据每一条的主键进行更新，当主键重复时会自动更新，若主键不存在，则进行保存，未给定数据的字段都会被置为空
 
 ### 使用方式
 
@@ -22,16 +22,13 @@ public interface BaseMapper<T> extends UpdateListByPrimarykeyMapper<T> {
 
 #### 参数说明
 
-> @param list          要批量更新的数据 
->
-> @param mappingFields 要更新的字段
+> @param list          要批量更新的数据
 
 #### 接口调用示例
 
 ```java
 List<Test> list = new LinkedList<>();
-List<MappingField> mappingFields = new MappingFieldUtils<Test, Object>(Test.class).put(Test::getId).put(Test::getV).toMappingFieldList();
-testMapper.updateListByPrimarykey(list, mappingFields);
+testMapper.updateListByPrimarykey(list);
 ```
 
 ### 执行sql
