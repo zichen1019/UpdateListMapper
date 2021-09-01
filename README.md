@@ -2,7 +2,9 @@
 
 通用mapper扩展-批量更新
 
-## 两种更新方式
+## 更新方式
+
+> 推荐第一种更新方式
 
 ## UpdateListByPrimarykeyMapper
 
